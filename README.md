@@ -77,6 +77,13 @@ Tarayıcınızda **`http://localhost:8000`** adresine gidin.
    * İzin: **Sadece Okuma (Read-Only)**.
    * Passphrase belirleyin ve bir kenara not edin.
 
+### ⚙️ API Anahtarlarını Sisteme Girme
+
+Aldığınız API bilgilerini sisteme iki şekilde girebilirsiniz:
+
+* **Yöntem 1 (Web Arayüzü - En Kolay):** Projeyi çalıştırıp `http://localhost:8000` adresine girdikten sonra sağ üst menüdeki **Ayarlar (Settings) ⚙️** butonuna tıklayın. Açılan pencerede ilgili borsaların alanlarına oluşturduğunuz API anahtarlarını yapıştırıp "Kaydet" demeniz yeterlidir.
+* **Yöntem 2 (.env Dosyası ile):** Proje klasöründeki `.env.example` dosyasının adını `.env` olarak değiştirin ve içini herhangi bir metin düzenleyiciyle (Not Defteri vb.) açıp anahtarlarınızı oraya doğrudan yazıp kaydedin.
+
 ---
 
 ## 📁 Proje Dizin Yapısı

@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bybit & OKX Hacim & Maliyet Takipçisi</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/static/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen font-sans antialiased">
+
+  <!-- Top Navigation Bar -->
+  <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-500 to-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/20">
+          <i class="fa-solid fa-chart-line text-white text-lg"></i>
+        </div>
+        <div>
+          <h1 class="font-bold text-base text-white tracking-wide">Bybit & OKX Tracker</h1>
+          <p class="text-xs text-slate-400">Otomatik Hacim, Komisyon & Makas Analizörü</p>
+        </div>
+      </div>
+
+      <!-- Action Buttons & Status -->
+      <div class="flex items-center space-x-3">
+        <div id="status-badges" class="hidden sm:flex items-center space-x-2 text-xs">
+          <span id="badge-bybit" class="px-2.5 py-1 rounded-full bg-slate-800 text-slate-400 border border-slate-700">Bybit: Bekleniyor</span>
+          <span id="badge-okx" class="px-2.5 py-1 rounded-full bg-slate-800 text-slate-400 border border-slate-700">OKX: Bekleniyor</span>
+        </div>
+
+        <button id="btn-open-excel" onclick="openExcel()" class="inline-flex items-center px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600/20 text-emerald-400 border border-emerald-500/30 hover:bg-emerald-600/30 transition">
+          <i class="fa-solid fa-file-excel mr-1.5 text-sm text-emerald-400"></i> Excel'i Aç
+        </button>
+
+        <button id="btn-sync-now" onclick="triggerSync()" class="inline-flex items-center px-4 py-1.5 rounded-lg text-xs font-bold bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-600/30 transition">
+          <i class="fa-solid fa-arrows-rotate mr-1.5 animate-none" id="sync-icon"></i> Şimdi Senkronize Et
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+    <!-- Notification Toast -->
+    <div id="toast" class="hidden fixed bottom-5 right-5 z-50 max-w-md p-4 rounded-xl shadow-2xl transition transform ease-out duration-300"></div>
+
+    <!-- Navigation Tabs -->
+    <div class="flex border-b border-slate-800 space-x-8 mb-6">
+      <button onclick="switchTab('events')" id="tab-btn-events" class="tab-btn pb-3 text-sm font-semibold border-b-2 border-blue-500 text-blue-400 transition">
+        <i class="fa-solid fa-bullseye mr-2"></i> Aktif Etkinlikler & Eşleştirme
+      </button>
+      <button onclick="switchTab('settings')" id="tab-btn-settings" class="tab-btn pb-3 text-sm font-semibold border-b-2 border-transparent text-slate-400 hover:text-slate-200 transition">
+        <i class="fa-solid fa-key mr-2"></i> Borsa API Bağlantıları
+      </button>
+      <button onclick="switchTab('logs')" id="tab-btn-logs" class="tab-btn pb-3 text-sm font-semibold border-b-2 border-transparent text-slate-400 hover:text-slate-200 transition">
+        <i class="fa-solid fa-clock-rotate-left mr-2"></i> Senkronizasyon Geçmişi
+      </button>
+    </div>
+
+    <!-- TAB 1: EVENTS -->
+    <div id="tab-events" class="tab-content space-y-6">
+      
+      <!-- Top Cards: AI Parser & Manual Add -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- AI Announcement Parser -->
+        <div class="lg:col-span-1 bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl flex flex-col justify-between">
+          <div>
+            <div class="flex items-center space-x-2 mb-3">
+              <span class="p-1.5 rounded-lg bg-purple-500/20 text-purple-400 text-xs font-bold">
+                <i class="fa-solid fa-wand-magic-sparkles"></i> AI Asistanı
+              </span>
+              <h3 class="text-sm font-bold text-white">Duyurudan Otomatik Ayıkla</h3>
+            </div>
+            <p class="text-xs text-slate-400 mb-3">
+              Telegram veya borsa duyuru metnini yapıştırın. Gemini AI coin adını, tarihleri ve etkinlik türünü anında çıkarır.
+            </p>
+            <textarea id="ai-announcement-text" rows="4" placeholder="Örn: Bybit Token Splash: Trade MNT/USDT to share 50,000 USDT reward pool from July 12 to July 26..." class="w-full text-xs bg-slate-950 border border-slate-800 rounded-xl p-3 text-slate-200 focus:outline-none focus:border-purple-500 resize-none"></textarea>
+          </div>
+          <button onclick="parseWithAI()" id="btn-parse-ai" class="mt-4 w-full py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-semibold text-xs transition flex items-center justify-center space-x-2">
+            <i class="fa-solid fa-robot"></i> <span>AI ile Analiz Et ve Forma Doldur</span>
+          </button>
+        </div>
+
+        <!-- Add Event Form -->
+        <div class="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-sm font-bold text-white flex items-center">
+              <i class="fa-solid fa-circle-plus text-blue-500 mr-2"></i> Yeni Etkinlik Takibi Başlat
+            </h3>
+            <span class="text-xs text-slate-400">Trade geçmişi bu kurallara göre taranır</span>
+          </div>
+
+          <form id="form-add-event" onsubmit="handleAddEvent(event)" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label class="block text-xs text-slate-400 mb-1">Borsa</label>
+              <select id="ev-exchange" onchange="handleExchangeChange()" class="w-full text-xs bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-slate-200 focus:border-blue-500">
+                <option value="Bybit">Bybit</option>
+                <option value="OKX">OKX</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-xs text-slate-400 mb-1">Event Türü</label>
+              <select id="ev-type" class="w-full text-xs bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-slate-200 focus:border-blue-500">
+                <!-- Dynamically populated -->
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-xs text-slate-400 mb-1">Piyasa Türü</label>
+              <select id="ev-market" class="w-full text-xs bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-slate-200 focus:border-blue-500">
+                <!-- Dynamically populated -->
+              </select>
+            </div>
+
+            <div>
+              <label class="block text-xs text-slate-400 mb-1">Coin Adı (Sembol)</label>
+              <input type="text" id="ev-coin" required placeholder="Örn: SUI, MNT, SOL" class="w-full text-xs bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-slate-200 uppercase focus:border-blue-500">
+            </div>
+
+            <div>
+              <label class="block text-xs text-slate-400 mb-1">Başlama Tarihi</label>
+              <input type="date" id="ev-start-date" required class="w-full text-xs bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-slate-200 focus:border-blue-500">
+            </div>
+
+            <div>
+              <label class="block text-xs text-slate-400 mb-1">Hedef Hacim ($ Opsiyonel)</label>
+              <input type="number" id="ev-target-vol" placeholder="Örn: 50000" class="w-full text-xs bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-slate-200 focus:border-blue-500">
+            </div>
+
+            <div class="md:col-span-3 flex justify-end mt-2">
+              <button type="submit" class="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs transition flex items-center space-x-2">
+                <i class="fa-solid fa-plus"></i> <span>Etkinliği Takibe Al</span>
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Active Events List -->
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-sm font-bold text-white flex items-center">
+            <i class="fa-solid fa-list-check text-emerald-400 mr-2"></i> Takip Edilen Etkinlikler
+          </h3>
+          <span id="events-count" class="text-xs text-slate-400">Yükleniyor...</span>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead>
+              <tr class="border-b border-slate-800 text-slate-400 font-semibold uppercase">
+                <th class="py-3 px-3">Borsa</th>
+                <th class="py-3 px-3">Event Adı / Türü</th>
+                <th class="py-3 px-3">Piyasa</th>
+                <th class="py-3 px-3">Coin</th>
+                <th class="py-3 px-3">Başlama</th>
+                <th class="py-3 px-3">Hedef Hacim</th>
+                <th class="py-3 px-3">Durum</th>
+                <th class="py-3 px-3 text-right">İşlem</th>
+              </tr>
+            </thead>
+            <tbody id="events-tbody" class="divide-y divide-slate-800/60">
+              <tr><td colspan="8" class="text-center py-6 text-slate-500">Kayıtlı etkinlik bulunamadı.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- TAB 2: SETTINGS -->
+    <div id="tab-settings" class="tab-content hidden space-y-6">
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        
+        <!-- Bybit Settings -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-4">
+          <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+            <div class="flex items-center space-x-2">
+              <span class="w-7 h-7 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center font-black text-xs">B</span>
+              <h3 class="text-sm font-bold text-white">Bybit V5 API Ayarları</h3>
+            </div>
+            <span class="text-xs text-amber-400 font-medium">Sadece Okuma (Read-Only)</span>
+          </div>
+
+          <div class="space-y-3">
+            <div>
+              <label class="block text-xs text-slate-400 mb-1">API Key</label>
+              <input type="text" id="set-bybit-key" placeholder="Bybit API Key" class="w-full text-xs bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-slate-200">
+            </div>
+            <div>
+              <label class="block text-xs text-slate-400 mb-1">API Secret</label>
+              <input type="password" id="set-bybit-secret" placeholder="Bybit API Secret" class="w-full text-xs bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-slate-200">
+            </div>
+            <div class="flex items-center space-x-2 pt-1">
+              <input type="checkbox" id="set-bybit-testnet" class="rounded bg-slate-950 border-slate-800 text-blue-500">
+              <label for="set-bybit-testnet" class="text-xs text-slate-400">Testnet Hesabı Kullan</label>
+            </div>
+          </div>
+
+          <div id="bybit-test-result" class="hidden p-3 rounded-xl text-xs"></div>
+        </div>
+
+        <!-- OKX Settings -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-4">
+          <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+            <div class="flex items-center space-x-2">
+              <span class="w-7 h-7 rounded-lg bg-blue-500/20 text-blue-400 flex items-center justify-center font-black text-xs">O</span>
+              <h3 class="text-sm font-bold text-white">OKX V5 API Ayarları</h3>
+            </div>
+            <span class="text-xs text-blue-400 font-medium">Sadece Okuma (Read-Only)</span>
+          </div>
+
+          <div class="space-y-3">
+            <div>
+              <label class="block text-xs text-slate-400 mb-1">API Key</label>
+              <input type="text" id="set-okx-key" placeholder="OKX API Key" class="w-full text-xs bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-slate-200">
+            </div>
+            <div>
+              <label class="block text-xs text-slate-400 mb-1">API Secret</label>
+              <input type="password" id="set-okx-secret" placeholder="OKX API Secret" class="w-full text-xs bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-slate-200">
+            </div>
+            <div>
+              <label class="block text-xs text-slate-400 mb-1">API Passphrase</label>
+              <input type="password" id="set-okx-passphrase" placeholder="OKX API Passphrase" class="w-full text-xs bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-slate-200">
+            </div>
+          </div>
+
+          <div id="okx-test-result" class="hidden p-3 rounded-xl text-xs"></div>
+        </div>
+
+        <!-- AI Settings -->
+        <div class="md:col-span-2 bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-4">
+          <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+            <div class="flex items-center space-x-2">
+              <span class="w-7 h-7 rounded-lg bg-purple-500/20 text-purple-400 flex items-center justify-center font-black text-xs">AI</span>
+              <h3 class="text-sm font-bold text-white">Google Gemini API Anahtarı (Opsiyonel)</h3>
+            </div>
+            <span class="text-xs text-slate-400">Duyuru çözümleme & trade analizi için</span>
+          </div>
+
+          <div>
+            <label class="block text-xs text-slate-400 mb-1">Gemini API Key</label>
+            <input type="password" id="set-gemini-key" placeholder="AI Studio'dan aldığınız API anahtarı" class="w-full text-xs bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-slate-200">
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Save & Test Buttons -->
+      <div class="flex items-center justify-between bg-slate-900 border border-slate-800 p-4 rounded-2xl shadow-xl">
+        <button onclick="testConnections()" id="btn-test-conn" class="px-5 py-2 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition">
+          <i class="fa-solid fa-plug mr-1.5"></i> Bağlantıları Test Et
+        </button>
+
+        <button onclick="saveSettings()" id="btn-save-settings" class="px-6 py-2 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-600/30 transition">
+          <i class="fa-solid fa-floppy-disk mr-1.5"></i> Ayarları .env Dosyasına Kaydet
+        </button>
+      </div>
+
+    </div>
+
+    <!-- TAB 3: LOGS -->
+    <div id="tab-logs" class="tab-content hidden space-y-6">
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-sm font-bold text-white flex items-center">
+            <i class="fa-solid fa-list-timeline text-blue-400 mr-2"></i> Senkronizasyon & Hata Kayıtları
+          </h3>
+          <button onclick="loadLogs()" class="text-xs text-slate-400 hover:text-white transition">
+            <i class="fa-solid fa-arrows-rotate mr-1"></i> Yenile
+          </button>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead>
+              <tr class="border-b border-slate-800 text-slate-400 font-semibold uppercase">
+                <th class="py-3 px-3">Zaman</th>
+                <th class="py-3 px-3">Borsa</th>
+                <th class="py-3 px-3">Durum</th>
+                <th class="py-3 px-3">Mesaj</th>
+                <th class="py-3 px-3">İşlem Sayısı</th>
+                <th class="py-3 px-3">Excel</th>
+              </tr>
+            </thead>
+            <tbody id="logs-tbody" class="divide-y divide-slate-800/60">
+              <tr><td colspan="6" class="text-center py-6 text-slate-500">Henüz log kaydı yok.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,40 @@
+# Virtual Environment
+.venv/
+venv/
+ENV/
+env/
+
+# Environment Variables (CRITICAL FOR SECURITY: Never commit API keys!)
+.env
+.env.local
+
+# Personal Working Excel File (Kişisel işlem verilerinizi korur, GitHub'a gitmez!)
+bybit-okx_maliyet.xlsx
+
+# Local SQLite Database & Caches
+*.db
+*.db-journal
+tracker.db
+
+# Python Bytecode & Cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+
+# Temporary Screenshots & Media
+photo_*.jpg
+photo_*.png
+*.tmp
+
+# Operating System & IDE Files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Agent Orchestration Metadata
+.agents/
